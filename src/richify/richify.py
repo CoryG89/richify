@@ -1,28 +1,32 @@
-from sys import stdin, stderr, exit
-from contextlib import suppress
-from signal import signal, SIGINT, SIGTERM
+"""Automatically rich highlight arbitrary text output in your terminal."""
+import sys
 from argparse import ArgumentParser
 from rich.console import Console
 
 def run():
+    """Run richify on input via stdin and return output on stdout."""
     parser = ArgumentParser(description='Rich format arbitrary text input')
     parser.add_argument('--color', choices=['never', 'auto', 'always'], default='auto')
     args = parser.parse_args()
+
     console = Console(
         force_terminal=(args.color == 'always') or None,
         highlight=(args.color != 'never')
     )
 
-    signal(SIGINT, lambda handler: exit(0))
-    signal(SIGTERM, lambda handler: exit(0))
-
-    for line in stdin:
+    while True:
         try:
-            console.print(line, end='')
+            line = sys.stdin.readline()
+        except UnicodeDecodeError:
+            continue
+        except KeyboardInterrupt:
+            break
         except (BrokenPipeError, IOError):
-            pass
-            stderr.close()
-            exit(0)
+            sys.stderr.close()
+            sys.exit()
+        if not line:
+            break
+        console.print(line, end='')
 
 if __name__ == "__main__":
     run()
